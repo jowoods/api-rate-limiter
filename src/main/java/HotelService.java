@@ -12,6 +12,7 @@ import java.util.Optional;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.http.*;
 import java.util.concurrent.ConcurrentHashMap;
 import com.woods.agoda.ratelimiter.*;
 import java.util.concurrent.atomic.*;
@@ -44,12 +45,13 @@ public class HotelService {
     // default to DEFAULT api key if none provided for the 'free level' ;) 
     //********************************************************************
     @RequestMapping(value="/hotels/{city}",method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    String home(@RequestHeader(value = "API-Key", defaultValue="DEFAULT") String apiKey, @PathVariable String city, @RequestParam("sortby") Optional<String> sortBy, @RequestParam("ascending") Optional<String> ascending) {
+    public ResponseEntity home(@RequestHeader(value = "API-Key", defaultValue="DEFAULT") String apiKey, @PathVariable String city, @RequestParam("sortby") Optional<String> sortBy, @RequestParam("ascending") Optional<String> ascending) {
         String jsonOutput =  "{}";
 
         try{
             TokenBucket defBucket = apiKeyLimits.get("DEFAULT"); 
 
+            //@Todo replace all logging with log4j or someother logging api that allows log levels etc.
             System.out.println(new StringBuilder("Does map of api key limits contain the key ").append(apiKey).append(" being passed? ").append(apiKeyLimits.contains(apiKey)));    // if not subject it to the global limits
             //*********************************************************************************************************
             // use the DEFAULT settings if no matching api key found in storage
@@ -81,14 +83,16 @@ public class HotelService {
                 List<Hotel> hotelList = HotelUtil.retrieveHotels(hotelsDbPath,city,sortBy.orElse("price"),ascending.orElse("true"));
                 jsonOutput = HotelUtil.convertToJson(hotelList);
 
+                return new ResponseEntity(jsonOutput,HttpStatus.OK);
+
             } else { // if no more tokens available OR the bucket is currently locked send message to the user with applicable response code.
                 jsonOutput = "{'status':'Account currently suspended as you have exceeded rate limits for your account or the default / global limits'}";
+                return new ResponseEntity<String>(HttpStatus.TOO_MANY_REQUESTS); // return code 429 to indicate too many request
             }
-        } catch (Exception e) {
+        } catch (Exception e) { // something went wrong!!!
             e.printStackTrace();
+	        return new ResponseEntity(jsonOutput,HttpStatus.BAD_REQUEST);
         }
-        
-        return jsonOutput;
     }
 
     //*****************************************************************************************************************************************

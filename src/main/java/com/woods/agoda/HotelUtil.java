@@ -43,16 +43,6 @@ public class HotelUtil {
             	hotels = hotels.stream().filter(h -> h.getCity().toLowerCase().indexOf(cityFilter.toLowerCase())>-1).collect(Collectors.toList());	
 			}
 
-	        if(sortBy!=null && sortBy.equals("city") && ascending!=null && ascending.equals("true")) {
-            	// use Java 8 Lanbda expression for comparator for sorting by city name
-				Collections.sort(hotels,(hotel1,hotel2)->(hotel1.getCity().toUpperCase().compareTo(hotel2.getCity().toUpperCase())));
-	        }
-
-	        if(sortBy!=null && sortBy.equals("city") && ascending!=null && ascending.equals("false")) {
-            	// use Java 8 Lanbda expression for comparator for sorting by city name
-				Collections.sort(hotels,(hotel1,hotel2)->(hotel2.getCity().toUpperCase().compareTo(hotel1.getCity().toUpperCase())));
-	        }
-
             if(sortBy!=null && sortBy.equals("room") && ascending!=null && ascending.equals("true")) {
                 // use Java 8 Lanbda expression for comparator for sorting by room type
                 Collections.sort(hotels,(hotel1,hotel2)->(hotel1.getRoom().toUpperCase().compareTo(hotel2.getRoom().toUpperCase())));
