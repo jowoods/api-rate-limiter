@@ -51,8 +51,7 @@ Maven
    http://localhost:8080/hotels/bangkok?sortby=price&ascending=false
 
 4) Rate limits:
-   The API will currently show a JSON value: {'status':'Account currently suspended as you have exceeded rate limits for your account or the default / global limits'} when the caller has exceeded their API limit or
-   the global value if that is being used.  
+   The API will currently show send a Response code of 429 when the api key for the time the API-Key is suspended if it exceeds its rate of requests/millis as per the rate limits file.  
   
 
 
