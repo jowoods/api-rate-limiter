@@ -1,5 +1,6 @@
 package com.woods.agoda.ratelimiter;
 
+import com.woods.agoda.exceptions.*;
 import java.util.concurrent.atomic.*;
 import java.util.Optional;
 
@@ -29,8 +30,8 @@ public class TokenBucket {
 
     public TokenBucket(long capacity, RefillStrategy refillStrategy) {
         this.refillStrategy = refillStrategy;
-        this.capacity = capacity;
-        this.size = new AtomicLong(0L);
+        this.capacity = capacity + 1;
+        this.size = new AtomicLong(capacity + 1);
     }
 
     /*
@@ -39,7 +40,7 @@ public class TokenBucket {
        goes to zero then it is suspended
        after check to make sure we are not requesting more than an are allowable for this provide the number of tokens desired
     */
-    public AtomicLong consume(long numTokens) throws InterruptedException {
+    public AtomicLong consume(long numTokens) throws InterruptedException, RefillInProgressException {
         if (numTokens < 0)
             throw new IllegalArgumentException("Number of tokens to consume must be a greater than zero");
         if (numTokens >= capacity)
@@ -53,9 +54,17 @@ public class TokenBucket {
                 newValue -= numTokens;
                 if (size.compareAndSet(existingSize, newValue))
                     break;
-            } else {
-                Thread.sleep(refillStrategy.getIntervalInMillis()); // sleeping for existing request 
+            } else { 
+                //************************************************************************
+                // Here the api user has not exceeded their rate limit they are just at a point where the current number of tokens reuqetsted exceeds the number available 
+                // thus exceeding the refill window
+                // Options include sending them a 429 and suspending their key which is not desirable and may violate SLA
+                // or sending the content not modified indication in conjunction with http cache headers since their last request, will use this a clue to send them a not modified
+                // Thread.sleep(refillStrategy.getIntervalInMillis()); // sleeping for existing request 
                 newTokens = Math.max(0, refillStrategy.refill());
+                System.out.println("numTokens: " + numTokens + " > newTokens: "+ newTokens + " sending clue to tell the API user that there is an issue or non-modified exception");
+                throw new RefillInProgressException("Refill in progress for current api key, use this to send no content modfication response so as not to disrupt service");
+                //************************************************************************
             }
         }
 

@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @RestController
 @EnableAutoConfiguration
@@ -32,10 +33,16 @@ public class HotelService {
     @Value("${com.woods.agoda.hotel.db.path}")
     private String hotelsDbPath;
 
+    @Autowired
+	private RateLimitService rateLimitService;
+
+    @Autowired
+    private HotelUtil hotelUtil;
+
     //******************************************************************** 
     // In Memory container for apiKeys and their limits including the default entry
     //******************************************************************** 
-    private static ConcurrentHashMap<String,TokenBucket> apiKeyLimits = RateLimitService.retrieveApiKeyLimits();
+    private ConcurrentHashMap<String,TokenBucket> apiKeyLimits = rateLimitService.retrieveApiKeyLimits();
 
     //******************************************************************** 
     // Set up sortby and sortdirection as optional fields
@@ -62,7 +69,7 @@ public class HotelService {
             System.out.println(new StringBuilder("Pre Consume size: (if > 0 and the unlock time is not in the future, request s/b handled below:) ").append(preConsumeSize) .append(", capacity: ").append(bucket.getCapacity()));
 
             //*********************************************************************************************************
-            // If pre-consume size is >= 0 and the bucket is not currently ssupended then allow the request thru
+            // If pre-consume size is >= 0 and the bucket is not currently suspended then allow the request thru
             //*********************************************************************************************************
             if(preConsumeSize >= 0 && bucket.getUnlockTime().get() <= System.currentTimeMillis()) {  
                 // CONSUME TOKEN from set for this request for this api key
@@ -80,8 +87,8 @@ public class HotelService {
                 // default to sorting by price 
                 // default to sorting in ascending order i.e. for price or city name... regardless of field if any being used to sort on 
                 //*********************************************************** 
-                List<Hotel> hotelList = HotelUtil.retrieveHotels(hotelsDbPath,city,sortBy.orElse("price"),ascending.orElse("true"));
-                jsonOutput = HotelUtil.convertToJson(hotelList);
+                List<Hotel> hotelList = hotelUtil.retrieveHotels(hotelsDbPath,city,sortBy.orElse("price"),ascending.orElse("true"));
+                jsonOutput = hotelUtil.convertToJson(hotelList);
 
                 return new ResponseEntity(jsonOutput,HttpStatus.OK);
 
@@ -96,7 +103,7 @@ public class HotelService {
     }
 
     //*****************************************************************************************************************************************
-    // Run using this java -jar -Dapi.rate.limits.path="C:\\projects\\heroku\\springbootselfex\\config\\apikeylimits.csv" target/agoda-0.0.1-SNAPSHOT.jar
+    // Run using this java -jar -Dapi.rate.limits.path="C:\\projects\\heroku\\api-rate-limiter\\config\\apikeylimits.csv" target/agoda-0.0.1-SNAPSHOT.jar
     // To override the path to the api rate limits
     //*****************************************************************************************************************************************
     public static void main(String[] args) throws Exception {

@@ -13,8 +13,8 @@ import java.util.Optional;
 import java.util.stream.*;
 import com.google.gson.Gson;
 
-public class HotelUtil {
-	public static List<Hotel> retrieveHotels(String path, String cityFilter ,String sortBy, String ascending) {      
+public class HotelUtil implements IHotelUtil{
+	public List<Hotel> retrieveHotels(String path, String cityFilter ,String sortBy, String ascending) {      
         String jsonOutput = "[]";  
 
        	List<Hotel> hotels = new ArrayList<Hotel>();
@@ -78,7 +78,7 @@ public class HotelUtil {
         return hotels;
 	}
 
-    public static String convertToJson(List<Hotel> hotels) {
+    public String convertToJson(List<Hotel> hotels) {
             Gson gson = new Gson();
             gson = new Gson();
 

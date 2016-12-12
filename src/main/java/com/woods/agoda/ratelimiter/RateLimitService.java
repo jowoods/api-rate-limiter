@@ -5,6 +5,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.FileNotFoundException;
 import java.util.concurrent.*;
+import org.springframework.stereotype.Component;
 
 // *****************************************************************
 // RateLimitService class 
@@ -14,8 +15,10 @@ import java.util.concurrent.*;
 // The CSV file should have headings as well indicating the usage of each field provided
 // the window for the api rate limit should be specified in milliseconds
 //*****************************************************************
-public class RateLimitService {
-	public static ConcurrentHashMap<String, TokenBucket> retrieveApiKeyLimits() {        
+@Component // enables injection, not much of a service so consder renaming to Util and, using Component to enable DI
+public class RateLimitService implements IRateLimitService{  
+    @Override
+	public ConcurrentHashMap<String, TokenBucket> retrieveApiKeyLimits() {        
        	ConcurrentHashMap<String,TokenBucket> apiKeyLimits = new ConcurrentHashMap<String,TokenBucket>();
 		BufferedReader br = null;
         String line = "";
