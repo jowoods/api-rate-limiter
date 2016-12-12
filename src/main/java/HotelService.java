@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.beans.factory.annotation.Autowired;
+import com.woods.agoda.exceptions.*;
 
 @RestController
 @EnableAutoConfiguration
@@ -73,7 +74,13 @@ public class HotelService {
             //*********************************************************************************************************
             if(preConsumeSize >= 0 && bucket.getUnlockTime().get() <= System.currentTimeMillis()) {  
                 // CONSUME TOKEN from set for this request for this api key
-                AtomicLong size = bucket.consume(1);
+                AtomicLong size;
+                try {
+                    size = bucket.consume(1);
+                } catch(RefillInProgressException e) {
+                    jsonOutput = "{'status':'Content Not Modified'}";
+                    return new ResponseEntity(jsonOutput,HttpStatus.NOT_MODIFIED);
+                }
                 System.out.println(new StringBuilder("Post Consume size: ").append(size.get()));
 
                 //*********************************************************************************************************************** 
