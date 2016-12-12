@@ -47,7 +47,7 @@ public class TokenBucketTest {
     bucket.consume(1);
     bucket.consume(1);
     Thread.sleep(1000); // wait for 1 second and then request more within refill 5 second window
-    bucket.consume(3); // exceed capacity before change to refill
+    bucket.consume(3); // exceed capacity before chance to refill
   }
 
   @Test
@@ -68,7 +68,31 @@ public class TokenBucketTest {
 
     Thread.sleep(refillStrategy.getIntervalInMillis()); // give the bucket a chance to refill
    
-    bucket.consume(2); // exceed capacity before change to refill
+    bucket.consume(2); // passes if no RefillInProgressException occurs here
+    System.out.println("Current bucket size, " + bucket.getSize() + ", not locked: "+ bucket.getUnlockTime().get());
+  }
+
+  @Test
+  public void testSuspensionAndNoRefillInProgressException()  throws IllegalArgumentException, InterruptedException, RefillInProgressException{
+    TokenBucket.RefillStrategy refillStrategy = new FixedIntervalRefillStrategy(CAPACITY, 5000, TimeUnit.MILLISECONDS);
+    refillStrategy.refill();
+
+    TokenBucket bucket = new TokenBucket(CAPACITY, refillStrategy);
+
+    Thread.sleep(10000); // wait for 10 seconds to give token bucket plenty of time fo fill
+
+    // consume 5 entries of the 5 token capacity
+    bucket.consume(1);
+    bucket.consume(1);
+    bucket.consume(1);
+    bucket.consume(1);
+    bucket.consume(1);
+
+    bucket.consume(1); // 6th request, this request should result in locking of api key 
+   
+    System.out.println("Current bucket size, " + bucket.getSize() + ", s/b locked: "+ bucket.getUnlockTime().get());
+
+    assertTrue(bucket.getUnlockTime().get() > System.currentTimeMillis());
   }
 
   @Test(expected = IllegalArgumentException.class)
